@@ -1,0 +1,27 @@
+{
+  "name": "token_economics_ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "demo": "tsx src/demo.ts",
+    "generate:offline-embeddings": "tsx src/data/writeOfflineEmbeddings.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "js-tiktoken": "^1.0.15",
+    "openai": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

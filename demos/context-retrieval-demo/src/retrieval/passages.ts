@@ -33,19 +33,20 @@ export function extractRelevantPassages(
     const passage = sentences.join(" ");
     const normalized = passage.toLowerCase();
 
-    if (!passage || seen.has(normalized)) continue;
+    if (passage && !seen.has(normalized)) {
+      const candidate = {
+        title: document.title,
+        updatedAt: document.metadata.updatedAt,
+        passage,
+      };
+      const candidateTokens = countTokens(formatPassage(candidate));
 
-    const candidate = {
-      title: document.title,
-      updatedAt: document.metadata.updatedAt,
-      passage,
-    };
-    const candidateTokens = countTokens(formatPassage(candidate));
-    if (usedTokens + candidateTokens > tokenBudget) continue;
-
-    usedTokens += candidateTokens;
-    seen.add(normalized);
-    passages.push(candidate);
+      if (usedTokens + candidateTokens <= tokenBudget) {
+        usedTokens += candidateTokens;
+        seen.add(normalized);
+        passages.push(candidate);
+      }
+    }
   }
 
   return passages;

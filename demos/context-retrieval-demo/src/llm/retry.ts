@@ -13,7 +13,9 @@ export async function withRetry<T>(
       if (attempt === maxAttempts) break;
 
       const backoffMs = Math.min(1500, 250 * 2 ** (attempt - 1));
-      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      await new Promise((resolve) => {
+        setTimeout(resolve, backoffMs);
+      });
     }
   }
 

@@ -46,15 +46,15 @@ export async function runRoutedStrategy(
 }
 
 async function runAndValidate(
-  task: Task,
+  routedTask: Task,
   model: {
     run(
       task: Task,
     ): Promise<Omit<AttemptRecord, "validationPassed" | "validationReason">>;
   },
 ): Promise<AttemptRecord> {
-  const result = await model.run(task);
-  const validation = validateTaskResult(task, result.output);
+  const result = await model.run(routedTask);
+  const validation = validateTaskResult(routedTask, result.output);
   return {
     ...result,
     validationPassed: validation.passed,

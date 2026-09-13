@@ -14,8 +14,19 @@
     "demo:retrieval": "npm --workspace context-retrieval-demo run demo -- --offline --no-pause",
     "demo:retrieval:live": "npm --workspace context-retrieval-demo run demo",
     "demo:routing": "npm --workspace intelligent-model-routing-demo run demo",
+    "lint": "eslint \"demos/**/*.ts\"",
+    "lint:fix": "eslint \"demos/**/*.ts\" --fix",
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "format": "npm run format --workspaces"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0"
   }
 }

@@ -2,6 +2,20 @@
 
 Two small, presentation-ready TypeScript demos for explaining AI workflow economics.
 
+## Browser UI
+
+The repo includes a small local UI for presenting the two demos side by side.
+
+```bash
+npm run ui
+```
+
+Build the UI with:
+
+```bash
+npm run ui:build
+```
+
 ## Demos
 
 - `demos/context-retrieval-demo`: shows how better retrieval reduces context size without reducing answer quality.

@@ -9,6 +9,7 @@ module.exports = {
     ecmaVersion: "latest",
     sourceType: "module",
     project: [
+      "./apps/demo-ui/tsconfig.json",
       "./demos/context-retrieval-demo/tsconfig.json",
       "./demos/intelligent-model-routing-demo/tsconfig.json",
     ],
@@ -24,6 +25,7 @@ module.exports = {
     "import/resolver": {
       typescript: {
         project: [
+          "./apps/demo-ui/tsconfig.json",
           "./demos/context-retrieval-demo/tsconfig.json",
           "./demos/intelligent-model-routing-demo/tsconfig.json",
         ],

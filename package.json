@@ -7,6 +7,7 @@
     "node": ">=22.0.0"
   },
   "workspaces": [
+    "apps/demo-ui",
     "demos/context-retrieval-demo",
     "demos/intelligent-model-routing-demo"
   ],
@@ -14,8 +15,10 @@
     "demo:retrieval": "npm --workspace context-retrieval-demo run demo -- --offline --no-pause",
     "demo:retrieval:live": "npm --workspace context-retrieval-demo run demo",
     "demo:routing": "npm --workspace intelligent-model-routing-demo run demo",
-    "lint": "eslint \"demos/**/*.ts\"",
-    "lint:fix": "eslint \"demos/**/*.ts\" --fix",
+    "ui": "npm --workspace demo-ui run dev",
+    "ui:build": "npm --workspace demo-ui run build",
+    "lint": "eslint \"{apps,demos}/**/*.ts\"",
+    "lint:fix": "eslint \"{apps,demos}/**/*.ts\" --fix",
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "format": "npm run format --workspaces"

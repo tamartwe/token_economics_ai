@@ -1,0 +1,17 @@
+{
+  "name": "demo-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"console.log('demo-ui has no tests')\"",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
+}

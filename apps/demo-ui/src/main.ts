@@ -36,6 +36,8 @@ const state: AppState = {
   errors: {},
 };
 
+let supportRequestId = 0;
+
 function app(): HTMLElement {
   const root = document.querySelector<HTMLElement>("#app");
   if (!root) throw new Error("App root not found");
@@ -93,7 +95,11 @@ function setActiveTab(tabId: TabId): void {
 }
 
 function setEfficientMode(enabled: boolean): void {
+  supportRequestId += 1;
   state.efficientMode = enabled;
+  state.sendLess = undefined;
+  state.errors["send-less"] = undefined;
+  state.loading["send-less"] = false;
   render();
 }
 
@@ -109,23 +115,32 @@ async function sendSupportQuestion(): Promise<void> {
     return;
   }
 
+  supportRequestId += 1;
+  const requestId = supportRequestId;
   state.loading["send-less"] = true;
   state.errors["send-less"] = undefined;
   render();
 
   try {
-    state.sendLess = await fetchJson<SendLessResponse>("/api/send-less", {
+    const response = await fetchJson<SendLessResponse>("/api/send-less", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
     });
+    if (requestId !== supportRequestId) return;
+
+    state.sendLess = response;
     state.questionText = state.sendLess.question;
   } catch (error) {
+    if (requestId !== supportRequestId) return;
+
     state.errors["send-less"] =
       error instanceof Error ? error.message : String(error);
   } finally {
-    state.loading["send-less"] = false;
-    render();
+    if (requestId === supportRequestId) {
+      state.loading["send-less"] = false;
+      render();
+    }
   }
 }
 

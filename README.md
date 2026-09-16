@@ -18,6 +18,9 @@ Build the UI with:
 npm run ui:build
 ```
 
+Presentation instructions for both UI demos live in
+`apps/demo-ui/README.md`.
+
 ## Demos
 
 - `demos/context-retrieval-demo`: shows how better retrieval reduces context size without reducing answer quality.

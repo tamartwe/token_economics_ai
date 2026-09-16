@@ -43,6 +43,7 @@ export function buildOptimizedContext(
   documents: EmbeddedDocument[],
   queryEmbedding: number[],
   contextTokenBudget: number,
+  question = demoQuestion,
 ): BuiltContext<RerankedDocument> {
   const filtered = filterByMetadata(documents, {
     environment: "production",
@@ -53,7 +54,7 @@ export function buildOptimizedContext(
     queryEmbedding,
     Math.min(6, filtered.length),
   );
-  const reranked = rerankCandidates(candidates, demoQuestion);
+  const reranked = rerankCandidates(candidates, question);
   const top = reranked.slice(0, 3);
   const passages = extractRelevantPassages(top, contextTokenBudget);
 
@@ -67,9 +68,9 @@ export function buildOptimizedContext(
   return { retrieved: top, context };
 }
 
-export function buildPrompt(context: string): string {
+export function buildPrompt(context: string, question = demoQuestion): string {
   return `Question:
-${demoQuestion}
+${question}
 
 Retrieved context:
 ${context}

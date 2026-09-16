@@ -4,7 +4,9 @@ Two small, presentation-ready TypeScript demos for explaining AI workflow econom
 
 ## Browser UI
 
-The repo includes a small local UI for presenting the two demos side by side.
+The repo includes a small Express-backed local UI for presenting the two demos.
+The browser calls API endpoints that run the same TypeScript demo logic used by
+the CLI demos.
 
 ```bash
 npm run ui

@@ -1,6 +1,7 @@
 # demo-ui
 
-A small local browser UI for presenting the two token economics demos.
+A small local browser UI backed by an Express API. The UI calls the actual
+TypeScript demo logic and renders the current results.
 
 ## Run
 
@@ -11,7 +12,7 @@ npm install
 npm run ui
 ```
 
-Open the local URL printed by Vite, usually:
+Open the local URL printed by the server, usually:
 
 ```text
 http://127.0.0.1:5173
@@ -28,7 +29,12 @@ npm run ui:build
 Use the UI as the audience-facing view and keep the terminal/code editor as the
 backup view.
 
-For `Send Less`, show the side-by-side before/after comparison first. Then open:
+For `Support Agent`, show the technical support question first. Toggle
+`Efficient mode` off and on to switch between baseline retrieval and optimized
+retrieval. The answer, retrieved documents, context preview, token count, and
+cost are returned by `/api/send-less`.
+
+Then open:
 
 ```text
 demos/context-retrieval-demo/src/context/builders.ts

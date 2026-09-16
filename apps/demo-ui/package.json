@@ -4,14 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "tsx src/server.ts",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1",
+    "preview": "NODE_ENV=production tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "node -e \"console.log('demo-ui has no tests')\"",
     "format": "prettier --write ."
   },
-  "devDependencies": {
+  "dependencies": {
+    "context-retrieval-demo": "file:../../demos/context-retrieval-demo",
+    "express": "^5.2.1",
+    "intelligent-model-routing-demo": "file:../../demos/intelligent-model-routing-demo",
     "vite": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
   }
 }

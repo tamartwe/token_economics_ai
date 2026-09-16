@@ -301,6 +301,126 @@ code {
   font-weight: 900;
 }
 
+.routing-form {
+  display: grid;
+  gap: 18px;
+}
+
+.routing-actions {
+  padding-top: 4px;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.strategy-option,
+.task-card {
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(137, 166, 199, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.strategy-option {
+  grid-template-columns: auto 1fr;
+  padding: 14px;
+}
+
+.strategy-option input {
+  grid-row: span 2;
+  align-self: start;
+  width: 18px;
+  height: 18px;
+  margin: 1px 4px 0 0;
+  accent-color: #ff9f43;
+}
+
+.strategy-option strong,
+.task-card strong {
+  color: #f8fbff;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.strategy-option span {
+  color: #aebccc;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.strategy-selected,
+.task-selected {
+  border-color: rgba(255, 159, 67, 0.56);
+  background: rgba(255, 159, 67, 0.1);
+}
+
+.task-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+  margin-top: 10px;
+  padding-right: 4px;
+}
+
+.task-card {
+  position: relative;
+  padding: 14px 14px 14px 42px;
+}
+
+.task-card input {
+  position: absolute;
+  top: 15px;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  accent-color: #ff9f43;
+}
+
+.task-card span {
+  color: #ff9f43;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.task-card p {
+  color: #aebccc;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-meta em {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #06101d;
+  background: #c4d5e8;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.routing-layout .message-agent {
+  margin-top: 18px;
+}
+
+.routing-results {
+  grid-column: 1 / -1;
+}
+
 .message-title {
   display: flex;
   justify-content: space-between;
@@ -495,6 +615,10 @@ code {
   margin-top: 18px;
 }
 
+.single-takeaway {
+  grid-template-columns: 1fr;
+}
+
 .panel,
 .takeaway {
   padding: 22px;
@@ -625,6 +749,8 @@ thead th {
   .hero,
   .agent-layout,
   .agent-header,
+  .strategy-grid,
+  .task-list,
   .comparison,
   .content-grid,
   .bottom-grid {

@@ -48,6 +48,17 @@ export type RoutingAttempt = {
   validationReason: string;
 };
 
+export type RoutingStrategy = "strongest" | "routed";
+
+export type RoutingTaskOption = {
+  id: string;
+  label: string;
+  type: string;
+  difficulty: "low" | "medium" | "high";
+  risk: "low" | "medium" | "high";
+  input: string;
+};
+
 export type RoutingTaskRun = {
   taskId: string;
   taskLabel: string;
@@ -74,11 +85,26 @@ export type RoutingResponse = {
   codePointer: string;
   baselineLabel: string;
   optimizedLabel: string;
+  tasks: RoutingTaskOption[];
   fixedSummary: RoutingSummary;
   routedSummary: RoutingSummary;
   highlightedRun: RoutingTaskRun;
   routedRuns: RoutingTaskRun[];
   metrics: ComparisonMetric[];
+  steps: PresenterStep[];
+  takeaway: string;
+};
+
+export type RoutingRunResponse = {
+  generatedAt: string;
+  strategy: RoutingStrategy;
+  strategyLabel: string;
+  task: RoutingTaskOption;
+  run: RoutingTaskRun;
+  summary: RoutingSummary;
+  command: string;
+  codePath: string;
+  codePointer: string;
   steps: PresenterStep[];
   takeaway: string;
 };

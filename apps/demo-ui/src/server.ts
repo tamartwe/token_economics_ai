@@ -2,7 +2,12 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
-import { runRoutingDemo, runSendLessDemo } from "./demoApi.js";
+import {
+  runRoutingDemo,
+  runRoutingTaskDemo,
+  runSendLessDemo,
+} from "./demoApi.js";
+import type { RoutingStrategy } from "./apiTypes.js";
 
 const port = Number(process.env.PORT ?? 5173);
 const isProduction = process.env.NODE_ENV === "production";
@@ -43,6 +48,34 @@ app.post("/api/send-less", async (request, response, next) => {
 app.get("/api/routing", async (_request, response, next) => {
   try {
     response.json(await runRoutingDemo());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/routing", async (request, response, next) => {
+  try {
+    const body = request.body as {
+      taskId?: unknown;
+      strategy?: unknown;
+    };
+    const taskId = typeof body.taskId === "string" ? body.taskId.trim() : "";
+    const strategy =
+      body.strategy === "strongest" || body.strategy === "routed"
+        ? body.strategy
+        : "";
+
+    if (!taskId) {
+      response.status(400).json({ error: "Task id must not be empty." });
+      return;
+    }
+
+    if (!strategy) {
+      response.status(400).json({ error: "Strategy must be strongest or routed." });
+      return;
+    }
+
+    response.json(await runRoutingTaskDemo(taskId, strategy as RoutingStrategy));
   } catch (error) {
     next(error);
   }

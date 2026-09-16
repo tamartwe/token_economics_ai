@@ -24,11 +24,22 @@ import type {
 } from "context-retrieval-demo/src/types.js";
 import { runFixedStrongest } from "intelligent-model-routing-demo/src/strategies/fixed.js";
 import { runRoutedStrategy } from "intelligent-model-routing-demo/src/strategies/routed.js";
-import { selectTasks } from "intelligent-model-routing-demo/src/tasks.js";
-import type { TaskRun } from "intelligent-model-routing-demo/src/metrics.js";
+import {
+  selectTasks,
+  tasks,
+  type Task,
+} from "intelligent-model-routing-demo/src/tasks.js";
+import {
+  taskCost,
+  type StrategyResult,
+  type TaskRun,
+} from "intelligent-model-routing-demo/src/metrics.js";
 import type {
   RoutingResponse,
+  RoutingRunResponse,
   RoutingSummary,
+  RoutingStrategy,
+  RoutingTaskOption,
   RoutingTaskRun,
   SendLessResponse,
 } from "./apiTypes.js";
@@ -145,6 +156,7 @@ export async function runRoutingDemo(): Promise<RoutingResponse> {
       "Show routeTask, runAndValidate, and one escalation to strongModel.",
     baselineLabel: "Strongest always",
     optimizedLabel: "Route · verify · escalate",
+    tasks: tasks.map(mapTaskOption),
     fixedSummary: fixed.summary,
     routedSummary: routed.summary,
     highlightedRun: mapRoutingRun(highlightedRun),
@@ -174,6 +186,48 @@ export async function runRoutingDemo(): Promise<RoutingResponse> {
     ],
     takeaway:
       "Do not avoid strong models. Spend strong-model tokens where they change the outcome.",
+  };
+}
+
+export async function runRoutingTaskDemo(
+  taskId: string,
+  strategy: RoutingStrategy,
+): Promise<RoutingRunResponse> {
+  const task = tasks.find((candidate) => candidate.id === taskId);
+  if (!task) throw new Error(`Unknown routing task: ${taskId}`);
+
+  const result =
+    strategy === "strongest"
+      ? await runFixedStrongest([task])
+      : await runRoutedStrategy([task]);
+  const run = result.runs[0];
+
+  if (!run) throw new Error("Routing demo produced no run.");
+
+  return {
+    generatedAt: new Date().toISOString(),
+    strategy,
+    strategyLabel: strategyLabel(strategy),
+    task: mapTaskOption(task),
+    run: mapRoutingRun(run),
+    summary: result.summary,
+    command:
+      strategy === "strongest"
+        ? "npm run demo:routing"
+        : "npm run demo --workspace intelligent-model-routing-demo -- --task extraction",
+    codePath:
+      strategy === "strongest"
+        ? "demos/intelligent-model-routing-demo/src/strategies/fixed.ts"
+        : "demos/intelligent-model-routing-demo/src/strategies/routed.ts",
+    codePointer:
+      strategy === "strongest"
+        ? "Show runFixedStrongest: every task uses strongModel, then validation measures success."
+        : "Show routeTask, runAndValidate, and one escalation to strongModel when validation fails.",
+    steps: routingRunSteps(strategy, result, run),
+    takeaway:
+      strategy === "strongest"
+        ? "The strongest model is simple and reliable, but it buys premium intelligence even when the task is easy."
+        : "Routing is only safe because every cheaper attempt is validated before the workflow stops.",
   };
 }
 
@@ -262,6 +316,74 @@ function mapRoutingRun(run: TaskRun): RoutingTaskRun {
       validationReason: attempt.validationReason,
     })),
   };
+}
+
+function mapTaskOption(task: Task): RoutingTaskOption {
+  return {
+    id: task.id,
+    label: task.label,
+    type: task.type,
+    difficulty: task.difficulty,
+    risk: task.risk,
+    input: task.input,
+  };
+}
+
+function routingRunSteps(
+  strategy: RoutingStrategy,
+  result: StrategyResult,
+  run: TaskRun,
+): RoutingRunResponse["steps"] {
+  if (strategy === "strongest") {
+    return [
+      {
+        label: "Choose",
+        detail: "Fixed strategy sends the task directly to the strongest model.",
+        status: "neutral",
+      },
+      {
+        label: "Verify",
+        detail: run.success
+          ? "The strongest model output passes the task validator."
+          : "The validator still fails, even after buying maximum capability.",
+        status: run.success ? "pass" : "warn",
+      },
+      {
+        label: "Measure",
+        detail: `The single-task workflow cost is ${formatCurrency(taskCost(run))}.`,
+        status: "pass",
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "Route",
+      detail: run.initialRouteReason,
+      status: "neutral",
+    },
+    {
+      label: "Verify",
+      detail: run.attempts[0]?.validationReason ?? "No validation result.",
+      status: run.attempts[0]?.validationPassed ? "pass" : "warn",
+    },
+    {
+      label: "Escalate",
+      detail: run.escalated
+        ? "Validation failed, so the workflow escalated once to the strong model."
+        : "Validation passed, so the workflow stopped without buying the strong model.",
+      status: run.escalated ? "warn" : "pass",
+    },
+    {
+      label: "Measure",
+      detail: `This run used ${result.summary.modelCalls} model call(s) and cost ${formatCurrency(result.summary.totalCost)}.`,
+      status: "pass",
+    },
+  ];
+}
+
+function strategyLabel(strategy: RoutingStrategy): string {
+  return strategy === "strongest" ? "Strongest always" : "Route · verify · escalate";
 }
 
 function preview(context: string): string {

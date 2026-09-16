@@ -2,7 +2,10 @@ import type {
   ComparisonMetric,
   PresenterStep,
   RetrievalRun,
+  RoutingRunResponse,
   RoutingResponse,
+  RoutingStrategy,
+  RoutingTaskOption,
   RoutingTaskRun,
   SendLessResponse,
 } from "./apiTypes.js";
@@ -22,8 +25,11 @@ type AppState = {
   activeTab: TabId;
   efficientMode: boolean;
   questionText: string;
+  routingTaskId: string;
+  routingStrategy: RoutingStrategy;
   sendLess?: SendLessResponse;
   routing?: RoutingResponse;
+  routingRun?: RoutingRunResponse;
   loading: Partial<Record<TabId, boolean>>;
   errors: Partial<Record<TabId, string>>;
 };
@@ -32,11 +38,14 @@ const state: AppState = {
   activeTab: "send-less",
   efficientMode: false,
   questionText: defaultSupportQuestion,
+  routingTaskId: "extract-ticket-priority",
+  routingStrategy: "routed",
   loading: {},
   errors: {},
 };
 
 let supportRequestId = 0;
+let routingRequestId = 0;
 
 function app(): HTMLElement {
   const root = document.querySelector<HTMLElement>("#app");
@@ -107,6 +116,24 @@ function setQuestionText(question: string): void {
   state.questionText = question;
 }
 
+function setRoutingTask(taskId: string): void {
+  routingRequestId += 1;
+  state.routingTaskId = taskId;
+  state.routingRun = undefined;
+  state.errors.routing = undefined;
+  state.loading.routing = false;
+  render();
+}
+
+function setRoutingStrategy(strategy: RoutingStrategy): void {
+  routingRequestId += 1;
+  state.routingStrategy = strategy;
+  state.routingRun = undefined;
+  state.errors.routing = undefined;
+  state.loading.routing = false;
+  render();
+}
+
 async function sendSupportQuestion(): Promise<void> {
   const question = state.questionText.trim();
   if (!question) {
@@ -139,6 +166,43 @@ async function sendSupportQuestion(): Promise<void> {
   } finally {
     if (requestId === supportRequestId) {
       state.loading["send-less"] = false;
+      render();
+    }
+  }
+}
+
+async function runSelectedRoutingTask(): Promise<void> {
+  if (!state.routingTaskId) {
+    state.errors.routing = "Choose a task before running the demo.";
+    render();
+    return;
+  }
+
+  routingRequestId += 1;
+  const requestId = routingRequestId;
+  state.loading.routing = true;
+  state.errors.routing = undefined;
+  render();
+
+  try {
+    const response = await fetchJson<RoutingRunResponse>("/api/routing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: state.routingTaskId,
+        strategy: state.routingStrategy,
+      }),
+    });
+    if (requestId !== routingRequestId) return;
+
+    state.routingRun = response;
+  } catch (error) {
+    if (requestId !== routingRequestId) return;
+
+    state.errors.routing = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (requestId === routingRequestId) {
+      state.loading.routing = false;
       render();
     }
   }
@@ -354,81 +418,123 @@ function renderSendLess(data?: SendLessResponse): string {
       </article>
     </section>` : ""}
 
-    ${data ? renderCodeAndTakeaway(data.codePath, data.codePointer, data.takeaway) : ""}
+    ${data ? renderTakeaway(data.takeaway) : ""}
   </section>`;
 }
 
 function renderRouting(data: RoutingResponse): string {
-  return `<section>
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Demo 2</p>
-        <h2>Buy Intelligence Selectively</h2>
-        <p>Same task set. Different model-buying strategies. Verified outcomes from the real routing demo.</p>
+  const status = renderInlineStatus("routing");
+  const selectedTask =
+    data.tasks.find((task) => task.id === state.routingTaskId) ?? data.tasks[0];
+  const run = state.routingRun;
+
+  return `<section class="agent-layout routing-layout">
+    <section class="agent-panel">
+      <div class="agent-header">
+        <div>
+          <p class="eyebrow">Model Routing Workbench</p>
+          <h2>Buy Intelligence Selectively</h2>
+          <p>Pick one task, choose a buying strategy, then run the real TypeScript routing workflow.</p>
+        </div>
       </div>
-      <div class="command-block">
-        <span>Run</span>
-        <code>${escapeHtml(data.command)}</code>
-      </div>
+
+      <form class="routing-form" id="routing-form">
+        <div class="mini-section">
+          <span>Strategy</span>
+          <div class="strategy-grid">
+            ${strategyOption(
+              "strongest",
+              "Strongest always",
+              "Send every task directly to the premium model.",
+            )}
+            ${strategyOption(
+              "routed",
+              "Route, verify, escalate",
+              "Start cheaper when risk allows, then validate.",
+            )}
+          </div>
+        </div>
+
+        <div class="mini-section">
+          <span>Task inbox</span>
+          <div class="task-list">${taskCards(data.tasks)}</div>
+        </div>
+
+        <div class="question-actions routing-actions">
+          <span>POST /api/routing</span>
+          <button type="submit">${state.loading.routing ? "Running..." : "Run"}</button>
+        </div>
+      </form>
+
+      ${status}
+
+      ${run ? `<article class="message message-agent">
+        <div class="message-title">
+          <span>${escapeHtml(run.strategyLabel)}</span>
+          <strong>${run.run.success ? "Verified success" : "Needs review"}</strong>
+        </div>
+        <small>${escapeHtml(run.task.label)} · ${escapeHtml(run.task.type)}</small>
+        ${routingTrace(run.run)}
+      </article>` : `<article class="message message-agent message-empty">
+        <div class="message-title">
+          <span>No routing run yet</span>
+          <strong>Waiting for Run</strong>
+        </div>
+        <p>Choose a task and strategy, then press Run to call the local Express API.</p>
+      </article>`}
     </section>
 
-    <section class="comparison" aria-label="Comparison metrics">
-      <article class="lane lane-muted">
-        <span>Before</span>
-        <h3>${escapeHtml(data.baselineLabel)}</h3>
-      </article>
-      <article class="lane lane-accent">
-        <span>After</span>
-        <h3>${escapeHtml(data.optimizedLabel)}</h3>
-      </article>
-    </section>
+    <aside class="run-panel">
+      ${run ? `<div class="panel-heading">
+        <span>Live run</span>
+        <h3>${escapeHtml(run.strategyLabel)}</h3>
+      </div>
+      ${routingRunStats(run)}
+      <div class="mini-section">
+        <span>Selected task</span>
+        <div class="empty-run">
+          <strong>${escapeHtml(run.task.label)}</strong>
+          <p>${escapeHtml(run.task.input)}</p>
+        </div>
+      </div>` : `<div class="panel-heading">
+        <span>Ready</span>
+        <h3>${escapeHtml(selectedTask?.label ?? "Choose a task")}</h3>
+      </div>
+      <div class="empty-run">
+        <strong>No model call has run yet.</strong>
+        <p>${escapeHtml(selectedTask?.input ?? "Select a task from the inbox.")}</p>
+      </div>`}
+    </aside>
 
-    <section class="content-grid">
+    ${run ? `<section class="content-grid routing-results">
+      <article class="panel">
+        <div class="panel-heading">
+          <span>Flow</span>
+          <h3>What Happened</h3>
+        </div>
+        <ol class="steps">${stepCards(run.steps)}</ol>
+      </article>
+
       <article class="panel metrics-panel">
         <div class="panel-heading">
-          <span>Economics</span>
-          <h3>Real Strategy Results</h3>
+          <span>Reference</span>
+          <h3>Full Demo Comparison</h3>
         </div>
         <table>
           <thead>
             <tr>
               <th scope="col">Metric</th>
-              <th scope="col">Strongest</th>
-              <th scope="col">Routed</th>
+              <th scope="col">${escapeHtml(data.baselineLabel)}</th>
+              <th scope="col">${escapeHtml(data.optimizedLabel)}</th>
               <th scope="col">Change</th>
             </tr>
           </thead>
           <tbody>${metricRows(data.metrics)}</tbody>
         </table>
       </article>
-
-      <article class="panel">
-        <div class="panel-heading">
-          <span>Escalation trace</span>
-          <h3>${escapeHtml(data.highlightedRun.taskLabel)}</h3>
-        </div>
-        ${routingTrace(data.highlightedRun)}
-      </article>
     </section>
 
-    <section class="bottom-grid">
-      <article class="panel">
-        <div class="panel-heading">
-          <span>Flow</span>
-          <h3>Presenter Beats</h3>
-        </div>
-        <ol class="steps">${stepCards(data.steps)}</ol>
-      </article>
-      <article class="panel">
-        <div class="panel-heading">
-          <span>Summary</span>
-          <h3>Routed workflow</h3>
-        </div>
-        ${summaryStats(data)}
-      </article>
-    </section>
-
-    ${renderCodeAndTakeaway(data.codePath, data.codePointer, data.takeaway)}
+    ${renderTakeaway(run.takeaway)}` : ""}
   </section>`;
 }
 
@@ -451,28 +557,54 @@ function runStats(run: RetrievalRun): string {
     .join("")}</dl>`;
 }
 
-function routingTrace(run: RoutingTaskRun): string {
-  return `<ol class="attempts">${run.attempts
-    .map(
-      (attempt, index) => `<li>
-        <span class="attempt-index">${index + 1}</span>
-        <div>
-          <strong>${escapeHtml(attempt.modelName)}</strong>
-          <p>${attempt.validationPassed ? "PASS" : "FAIL"} - ${escapeHtml(attempt.validationReason)}</p>
-          <code>${escapeHtml(JSON.stringify(attempt.output))}</code>
-        </div>
-      </li>`,
-    )
-    .join("")}</ol>`;
+function strategyOption(
+  strategy: RoutingStrategy,
+  label: string,
+  detail: string,
+): string {
+  const selected = strategy === state.routingStrategy;
+  return `<label class="strategy-option ${selected ? "strategy-selected" : ""}">
+    <input
+      type="radio"
+      name="routing-strategy"
+      value="${strategy}"
+      ${selected ? "checked" : ""}
+    />
+    <strong>${escapeHtml(label)}</strong>
+    <span>${escapeHtml(detail)}</span>
+  </label>`;
 }
 
-function summaryStats(data: RoutingResponse): string {
+function taskCards(tasks: RoutingTaskOption[]): string {
+  return tasks
+    .map((task) => {
+      const selected = task.id === state.routingTaskId;
+      return `<label class="task-card ${selected ? "task-selected" : ""}">
+        <input
+          type="radio"
+          name="routing-task"
+          value="${escapeHtml(task.id)}"
+          ${selected ? "checked" : ""}
+        />
+        <span>${escapeHtml(task.type.replace(/_/g, " "))}</span>
+        <strong>${escapeHtml(task.label)}</strong>
+        <p>${escapeHtml(task.input)}</p>
+        <div class="task-meta">
+          <em>Difficulty: ${escapeHtml(task.difficulty)}</em>
+          <em>Risk: ${escapeHtml(task.risk)}</em>
+        </div>
+      </label>`;
+    })
+    .join("");
+}
+
+function routingRunStats(data: RoutingRunResponse): string {
   const rows = [
-    ["Verified successes", String(data.routedSummary.successfulTasks)],
-    ["Model calls", String(data.routedSummary.modelCalls)],
-    ["Escalations", String(data.routedSummary.escalations)],
-    ["Total cost", formatCurrency(data.routedSummary.totalCost)],
-    ["Cost per success", formatCurrency(data.routedSummary.costPerSuccessfulTask)],
+    ["Model calls", String(data.summary.modelCalls)],
+    ["Escalations", String(data.summary.escalations)],
+    ["Total cost", formatCurrency(data.summary.totalCost)],
+    ["Cost per success", formatCurrency(data.summary.costPerSuccessfulTask)],
+    ["Final status", data.run.success ? "PASS" : "FAIL"],
   ];
 
   return `<dl class="stats">${rows
@@ -485,20 +617,23 @@ function summaryStats(data: RoutingResponse): string {
     .join("")}</dl>`;
 }
 
-function renderCodeAndTakeaway(
-  codePath: string,
-  codePointer: string,
-  takeaway: string,
-): string {
-  return `<section class="bottom-grid">
-    <article class="panel code-panel">
-      <div class="panel-heading">
-        <span>Code Pointer</span>
-        <h3>${escapeHtml(codePath)}</h3>
-      </div>
-      <p>${escapeHtml(codePointer)}</p>
-    </article>
+function routingTrace(run: RoutingTaskRun): string {
+  return `<ol class="attempts">${run.attempts
+    .map(
+      (attempt, index) => `<li>
+        <span class="attempt-index">${index + 1}</span>
+        <div>
+          <strong>${escapeHtml(attempt.modelName)}</strong>
+          <p>${attempt.validationPassed ? "PASS" : "FAIL"} - ${escapeHtml(attempt.validationReason)} · ${formatCurrency(attempt.cost)}</p>
+          <code>${escapeHtml(JSON.stringify(attempt.output))}</code>
+        </div>
+      </li>`,
+    )
+    .join("")}</ol>`;
+}
 
+function renderTakeaway(takeaway: string): string {
+  return `<section class="bottom-grid single-takeaway">
     <article class="takeaway">
       <span>Takeaway</span>
       <p>${escapeHtml(takeaway)}</p>
@@ -514,15 +649,15 @@ function render(): void {
     return;
   }
 
+  if (tabId === "routing" && state.routing) {
+    renderShell(renderRouting(state.routing));
+    return;
+  }
+
   const status = renderStatus(tabId);
 
   if (status) {
     renderShell(status);
-    return;
-  }
-
-  if (tabId === "routing" && state.routing) {
-    renderShell(renderRouting(state.routing));
     return;
   }
 
@@ -555,6 +690,33 @@ function attachHandlers(): void {
       event.preventDefault();
       sendSupportQuestion().catch((error: unknown) => {
         state.errors["send-less"] =
+          error instanceof Error ? error.message : String(error);
+        render();
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLInputElement>('input[name="routing-strategy"]')
+    .forEach((input) => {
+      input.addEventListener("change", () => {
+        setRoutingStrategy(input.value as RoutingStrategy);
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLInputElement>('input[name="routing-task"]')
+    .forEach((input) => {
+      input.addEventListener("change", () => {
+        setRoutingTask(input.value);
+      });
+    });
+
+  document
+    .querySelector<HTMLFormElement>("#routing-form")
+    ?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runSelectedRoutingTask().catch((error: unknown) => {
+        state.errors.routing =
           error instanceof Error ? error.message : String(error);
         render();
       });
